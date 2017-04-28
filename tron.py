@@ -47,10 +47,24 @@ class Player:
 
 
 class GameSpace:
+	def menu(self):
+		self.menuimage = pygame.image.load("menu.png")
+		self.screen.blit(self.menuimage, self.menuimage.get_rect())
+		pygame.display.flip()
+
+		while 1:
+			for event in pygame.event.get():
+				if event.type == pygame.QUIT: sys.exit()
+				if event.type == pygame.MOUSEBUTTONUP:
+					pos = pygame.mouse.get_pos()
+					if (pos[0] > 270 and pos[0] < 270+260 and pos[1] > 560 and pos[1] < 560+80):
+						return
+
 	def main(self):
 		pygame.init()
 		self.size = self.width, self.height = 800, 800
 		self.screen = pygame.display.set_mode(self.size)
+		self.menu()
 		self.black = 0, 0, 0
 		pygame.key.set_repeat(300, 50)
 
