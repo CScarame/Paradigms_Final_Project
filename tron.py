@@ -26,6 +26,10 @@ class Player:
 			self.image = pygame.image.load("red.png")
 		elif c == 'b':
 			self.image = pygame.image.load("blue.png")
+		elif c == 'y':
+			self.image = pygame.image.load("yellow.png")
+		elif c == 'g':
+			self.image = pygame.image.load("green.png")
 		else:
 			self.image = pygame.image.load("white.png")
 
@@ -58,7 +62,32 @@ class GameSpace:
 				if event.type == pygame.MOUSEBUTTONUP:
 					pos = pygame.mouse.get_pos()
 					if (pos[0] > 270 and pos[0] < 270+260 and pos[1] > 560 and pos[1] < 560+80):
+						self.playerSelect()
 						return
+
+	def playerSelect(self):
+		self.colorimage = pygame.image.load("colorselect.png")
+		self.screen.blit(self.colorimage, self.colorimage.get_rect())
+		pygame.display.flip()
+
+		while 1:
+			for event in pygame.event.get():
+				if event.type == pygame.QUIT: sys.exit()
+				if event.type == pygame.MOUSEBUTTONUP:
+					pos = pygame.mouse.get_pos()
+					if (pos[0] > 447 and pos[0] < 447+180 and pos[1] > 457 and pos[1] < 457+180):
+						self.color = 'y'
+						return
+					if (pos[0] > 200 and pos[0] < 200+180 and pos[1] > 180 and pos[1] < 180+180):
+						self.color = 'r'
+						return
+					if (pos[0] > 450 and pos[0] < 450+180 and pos[1] > 180 and pos[1] < 180+180):
+						self.color = 'g'
+						return
+					if (pos[0] > 200 and pos[0] < 200+180 and pos[1] > 457 and pos[1] < 457+180):
+						self.color = 'b'
+						return
+
 
 	def main(self):
 		pygame.init()
