@@ -142,6 +142,8 @@ class GameSpace:
 						return
 					else:
 						pass
+				else:
+					pass
 						# restart = True
 						# self.blocks = []
 						# self.edge = []
