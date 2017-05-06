@@ -283,22 +283,26 @@ class GameSpace:
 				for e in self.edge:
 					self.screen.blit(e.image, e.rect)
 					if self.player1.rect.colliderect(e):
-						self.collision(e, 1)
-						self.collided = True
+						if (not self.collided):
+							self.collision(e, 1)
+							self.collided = True
 
-					if self.player2.rect.colliderect(e):
-						self.collision(e, 2)
-						self.collided = True
+					elif self.player2.rect.colliderect(e):
+						if (not self.collided):
+							self.collision(e, 2)
+							self.collided = True
 
 				for b in self.blocks:
 					self.screen.blit(b.image, b.rect)
 					if self.player1.rect.colliderect(b):
-						self.collision(b, 1)
-						self.collided = True
+						if (not self.collided):
+							self.collision(b, 1)
+							self.collided = True
 
-					if self.player2.rect.colliderect(b):
-						self.collision(b, 2)
-						self.collided = True
+					elif self.player2.rect.colliderect(b):
+						if (not self.collided):
+							self.collision(b, 2)
+							self.collided = True
 
 				self.blocks.append(block1)
 				self.blocks.append(block2)
