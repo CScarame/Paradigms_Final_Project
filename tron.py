@@ -38,8 +38,6 @@ class Player:
 			self.image = pygame.image.load("white.png")
 
 		self.rect = self.image.get_rect()
-		# self.rect.x = 350
-		# self.rect.y = 350
 		self.dir = 'r'
 		self.visited = []
 
@@ -108,14 +106,21 @@ class GameSpace:
 						continue
 
 	def collision(self, r, p):
-		self.collideimage = pygame.image.load("explosion1.png")
-		self.collideimagerect = self.collideimage.get_rect()
-		self.collideimagerect.x = r.rect.x - 25
-		self.collideimagerect.y = r.rect.y - 25
 		counter = 0
-		while counter < 20:
-			print (str(counter))
-			counter  = counter + 1
+		loopcounter = 0
+		rising = True
+		while loopcounter <= 21 and counter >= 0:
+			explosionfile = "./explosion/explosion" + str(counter) + ".png"
+			self.collideimage = pygame.image.load(explosionfile)
+			self.collideimagerect = self.collideimage.get_rect()
+			self.collideimagerect.x = r.rect.x - 25
+			self.collideimagerect.y = r.rect.y - 25
+			if (counter == 10):
+				rising = False
+			if (rising):
+				counter  = counter + 1
+			else:
+				counter = counter - 1
 			self.screen.fill(self.black)
 			for e in self.edge:
 				self.screen.blit(e.image, e.rect)
@@ -126,10 +131,25 @@ class GameSpace:
 			self.screen.blit(self.collideimage, self.collideimagerect)
 			pygame.display.flip()
 
-		if self.collideplayer == 1:
-				print ("Player 2 wins!")
+		self.screen.fill(self.black)
+		for e in self.edge:
+			self.screen.blit(e.image, e.rect)
+		for b in self.blocks:
+			self.screen.blit(b.image, b.rect)
+		self.screen.blit(self.player1.image, self.player1.rect)
+		self.screen.blit(self.player2.image, self.player2.rect)
+
+		if p == 1:
+			print ("Player 2 wins!")
+			self.winimage = pygame.image.load("p2win.png")
 		else:
 			print ("Player 1 wins!")
+			self.winimage = pygame.image.load("p1win.png")
+
+		self.screen.blit(self.winimage, [50, 0])
+		pygame.display.flip()
+
+
 
 		restart = False
 		while not restart:
@@ -144,11 +164,22 @@ class GameSpace:
 						pass
 				else:
 					pass
-						# restart = True
-						# self.blocks = []
-						# self.edge = []
-						# self.collided = False
-						# #self.playerSelect()
+
+	def startanimation(self):
+		counter = 0
+		p1 = pygame.image.load("p1.png")
+		p2 = pygame.image.load("p2.png")
+
+		while counter < 20:
+			counter += 1
+			self.screen.fill(self.black)
+			for e in self.edge:
+				self.screen.blit(e.image, e.rect)
+			self.screen.blit(self.player1.image, self.player1.rect)
+			self.screen.blit(self.player2.image, self.player2.rect)
+			self.screen.blit(p1, [100,300])
+			self.screen.blit(p2, [500,300])
+			pygame.display.flip()
 
 
 	def main(self):
@@ -161,6 +192,7 @@ class GameSpace:
 		self.black = 0, 0, 0
 		pygame.key.set_repeat(300, 50)
 
+
 		while 1:
 			self.playerSelect()
 			self.exploderect = None
@@ -169,7 +201,7 @@ class GameSpace:
 			self.player1.rect.x = 200
 			self.player1.rect.y = 400
 			self.player2 = Player(self.color2)
-			self.player2.rect.x = 500
+			self.player2.rect.x = 600
 			self.player2.rect.y = 400
 
 			self.clock = pygame.time.Clock()
@@ -183,63 +215,63 @@ class GameSpace:
 				self.edge.append(Block(n, 800-8, 'w'))
 				self.edge.append(Block(800-8, n, 'w'))
 
+			self.startanimation()
+
 			self.collided = False
 			while not self.collided:
 				self.clock.tick(60)
 				for event in pygame.event.get():
 					if event.type == pygame.QUIT: sys.exit()
 					if event.type == KEYDOWN:
-						if (event.key == K_LEFT):
+						if (event.key == K_a):
 							self.player1.dir = 'l'
 							self.player1.tick()
 							self.screen.blit(self.player1.image, self.player1.rect)
 							block = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
 							self.blocks.append(block)
-						if (event.key == K_RIGHT):
+						if (event.key == K_d):
 							self.player1.dir = 'r'
 							self.player1.tick()
 							self.screen.blit(self.player1.image, self.player1.rect)
 							block = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
 							self.blocks.append(block)
-						if (event.key == K_UP):
+						if (event.key == K_w):
 							self.player1.dir = 'u'
 							self.player1.tick()
 							self.screen.blit(self.player1.image, self.player1.rect)
 							block = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
 							self.blocks.append(block)
-						if (event.key == K_DOWN):
+						if (event.key == K_s):
 							self.player1.dir = 'd'
 							self.player1.tick()
 							self.screen.blit(self.player1.image, self.player1.rect)
 							block = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
 							self.blocks.append(block)
 
-						if (event.key == K_a):
+						if (event.key == K_LEFT):
 							self.player2.dir = 'l'
 							self.player2.tick()
 							self.screen.blit(self.player2.image, self.player2.rect)
 							block = Block(self.player2.rect.x, self.player2.rect.y, self.color2)
 							self.blocks.append(block)
-						if (event.key == K_d):
+						if (event.key == K_RIGHT):
 							self.player2.dir = 'r'
 							self.player2.tick()
 							self.screen.blit(self.player2.image, self.player2.rect)
 							block = Block(self.player2.rect.x, self.player2.rect.y, self.color2)
 							self.blocks.append(block)
-						if (event.key == K_w):
+						if (event.key == K_UP):
 							self.player2.dir = 'u'
 							self.player2.tick()
 							self.screen.blit(self.player2.image, self.player2.rect)
 							block = Block(self.player2.rect.x, self.player2.rect.y, self.color2)
 							self.blocks.append(block)
-						if (event.key == K_s):
+						if (event.key == K_DOWN):
 							self.player2.dir = 'd'
 							self.player2.tick()
 							self.screen.blit(self.player2.image, self.player2.rect)
 							block = Block(self.player2.rect.x, self.player2.rect.y, self.color2)
 							self.blocks.append(block)
-
-
 
 				self.player1.tick()
 				self.player2.tick()
@@ -253,26 +285,20 @@ class GameSpace:
 					if self.player1.rect.colliderect(e):
 						self.collision(e, 1)
 						self.collided = True
-						# self.exploderect = e
-						# self.collideplayer = 1
+
 					if self.player2.rect.colliderect(e):
 						self.collision(e, 2)
 						self.collided = True
-						# self.exploderect = e
-						# self.collideplayer = 2
 
 				for b in self.blocks:
 					self.screen.blit(b.image, b.rect)
 					if self.player1.rect.colliderect(b):
 						self.collision(b, 1)
 						self.collided = True
-						# self.exploderect = b
-						# self.collideplayer = 1
+
 					if self.player2.rect.colliderect(b):
 						self.collision(b, 2)
 						self.collided = True
-						# self.exploderect = b
-						# self.collideplayer = 2
 
 				self.blocks.append(block1)
 				self.blocks.append(block2)
