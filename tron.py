@@ -26,6 +26,7 @@ class Block:
 class Player:
 	def __init__(self, c):
 		self.color = c
+		self.dir = 'r'
 		if c == 'r':
 			self.image = pygame.image.load("red.png")
 		elif c == 'b':
@@ -38,7 +39,6 @@ class Player:
 			self.image = pygame.image.load("white.png")
 
 		self.rect = self.image.get_rect()
-		self.dir = 'r'
 		self.visited = []
 
 	def tick(self):
@@ -79,28 +79,56 @@ class GameSpace:
 					if (playerpicking == 1):
 						if (pos[0] > 447 and pos[0] < 447+180 and pos[1] > 457 and pos[1] < 457+180):
 							self.color1 = 'y'
+							self.p1picking = pygame.image.load("p1small.png")
+							self.screen.blit(self.p1picking, [447, 457])
+							pygame.display.flip()
 							playerpicking = 2
 						if (pos[0] > 200 and pos[0] < 200+180 and pos[1] > 180 and pos[1] < 180+180):
 							self.color1 = 'r'
+							self.p1picking = pygame.image.load("p1small.png")
+							self.screen.blit(self.p1picking, [200, 180])
+							pygame.display.flip()
 							playerpicking = 2
 						if (pos[0] > 450 and pos[0] < 450+180 and pos[1] > 180 and pos[1] < 180+180):
 							self.color1 = 'g'
+							self.p1picking = pygame.image.load("p1small.png")
+							self.screen.blit(self.p1picking, [450, 180])
+							pygame.display.flip()
 							playerpicking = 2
 						if (pos[0] > 200 and pos[0] < 200+180 and pos[1] > 457 and pos[1] < 457+180):
 							self.color1 = 'b'
+							self.p1picking = pygame.image.load("p1small.png")
+							self.screen.blit(self.p1picking, [200, 457])
+							pygame.display.flip()
 							playerpicking = 2
 					elif (playerpicking == 2):
 						if (pos[0] > 447 and pos[0] < 447+180 and pos[1] > 457 and pos[1] < 457+180):
 							self.color2 = 'y'
+							self.p2picking = pygame.image.load("p2small.png")
+							self.screen.blit(self.p2picking, [447, 457])
+							pygame.display.flip()
+							pygame.time.delay(1000)
 							return
 						if (pos[0] > 200 and pos[0] < 200+180 and pos[1] > 180 and pos[1] < 180+180):
 							self.color2 = 'r'
+							self.p2picking = pygame.image.load("p2small.png")
+							self.screen.blit(self.p2picking, [200, 180])
+							pygame.display.flip()
+							pygame.time.delay(1000)
 							return
 						if (pos[0] > 450 and pos[0] < 450+180 and pos[1] > 180 and pos[1] < 180+180):
 							self.color2 = 'g'
+							self.p2picking = pygame.image.load("p2small.png")
+							self.screen.blit(self.p2picking, [450, 180])
+							pygame.display.flip()
+							pyame.time.delay(1000)
 							return
 						if (pos[0] > 200 and pos[0] < 200+180 and pos[1] > 457 and pos[1] < 457+180):
 							self.color2 = 'b'
+							self.p2picking = pygame.image.load("p2small.png")
+							self.screen.blit(self.p2picking, [200, 457])
+							pygame.display.flip()
+							pygame.time.delay(1000)
 							return
 					else:
 						continue
