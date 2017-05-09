@@ -78,8 +78,12 @@ class DataConnection(Protocol):
         print "Data Connection Established"
         print "I am player " + str(self.player)
         self.group.gs.player = self.player
+        self.group.gs.other_player_num = (self.player % 2) + 1 
         self.group.gs.data_conn = self
-        self.group.gs.main()
+        try:
+        	self.group.gs.main()
+        except:
+                pass
     def dataReceived(self,data):
         self.data = data
         print data
@@ -167,6 +171,7 @@ class GameSpace:
 		self.screen.blit(self.menuimage, self.menuimage.get_rect())
 		pygame.display.flip()
 		# Wait to display begin button until finished connecting
+                self.other_player = None
                 self.data_conn = None
 		group = ConnectionGroup()
                 group.gs = self
@@ -330,8 +335,7 @@ class GameSpace:
                                                 pygame.display.flip()
                                                 return
                                         else: continue
-
-
+                                        
 	def collision(self, r, p):
 		counter = 0
 		loopcounter = 0
@@ -368,9 +372,13 @@ class GameSpace:
 
 		if p == 1:
 			print ("Player 2 wins!")
+                        self.data_conn.transport.write("w")
+                        reactor.iterate()
 			self.winimage = pygame.image.load("p2win.png")
 		else:
 			print ("Player 1 wins!")
+                        self.data_conn.transport.write("w")
+                        reactor.iterate()
 			self.winimage = pygame.image.load("p1win.png")
 
 		self.screen.blit(self.winimage, [50, 0])
@@ -407,24 +415,62 @@ class GameSpace:
 			self.screen.blit(p1, [100,300])
 			self.screen.blit(p2, [500,300])
 			pygame.display.flip()
+	
+	## Helper functions so that both main functiosn can be the same
 
+        def player_me(self):
+                if self.player == 1:
+                        return self.player1
+                else:
+                        return self.player2
+        def player_other(self):
+                if self.player == 1:
+                        return self.player2
+                else:
+                        return self.player1
+        def color_me(self):
+                if self.player == 1:
+                        return self.color1
+                else:
+                        return self.color2
+        def color_other(self):
+                if self.player == 1:
+                        return self.color2
+                else:
+                        return self.color1
 
 	def main(self):
 		self.menu()
 		self.black = 0, 0, 0
 		pygame.key.set_repeat(300, 50)
 
+                
 
 		while 1:
 			self.playerSelect()
+                        if self.player == 1:
+                        	self.data_conn.transport.write("o")
+                        elif self.player == 2:
+                                self.data_conn.transport.write("n")
+
+                        # Reset data
+                        reactor.iterate()
+                        pygame.time.wait(500)
+                        reactor.iterate()
+                        
 			self.exploderect = None
 			self.collideplayer = None
 			self.player1 = Player(self.color1)
-			self.player1.rect.x = 200
+                        if self.player == 1:
+				self.player1.rect.x = 200
+                        else:
+                                self.player1.rect.x = 200 - 8
 			self.player1.rect.y = 400
 			self.player2 = Player(self.color2)
 			self.player2.rect.x = 600
 			self.player2.rect.y = 400
+
+                	# Set players
 
 			self.clock = pygame.time.Clock()
 			self.screen.fill(self.black)
@@ -441,92 +487,108 @@ class GameSpace:
 
 			self.collided = False
 			while not self.collided:
-				self.clock.tick(60)
+				self.clock.tick(30)
+                                # check for data from other game
+                                reactor.iterate()
+                                if self.data_conn.data == 'o':
+                                        pass
+                                        # This indicates that the opponent has not pressed any buttons.
+                                elif self.data_conn.data in ('l','r','d','u'):
+                                        self.player_other().dir = self.data_conn.data
+                                        self.player_other().tick()
+                                        self.screen.blit(self.player_other().image, self.player_other().rect)
+                                        block = Block(self.player_other().rect.x, self.player_other().rect.y, self.color_other())
+                        		self.blocks.append(block)
+                                elif self.data_conn.data == 'n':
+                                        # Indicates data has not been processed yet.
+                                        continue
+                                elif self.data_conn.data == 'w':
+                                        self.check_collisions()
+                                        continue
+                                # Indicate we must receive new data
+                                self.data_conn.data = 'n'
+                                data_written = 0
 				for event in pygame.event.get():
 					if event.type == pygame.QUIT: self.game_exit()
 					if event.type == KEYDOWN:
-						if (event.key == K_a):
-							self.player1.dir = 'l'
-							self.player1.tick()
-							self.screen.blit(self.player1.image, self.player1.rect)
-							block = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
-							self.blocks.append(block)
-						if (event.key == K_d):
-							self.player1.dir = 'r'
-							self.player1.tick()
-							self.screen.blit(self.player1.image, self.player1.rect)
-							block = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
-							self.blocks.append(block)
-						if (event.key == K_w):
-							self.player1.dir = 'u'
-							self.player1.tick()
-							self.screen.blit(self.player1.image, self.player1.rect)
-							block = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
-							self.blocks.append(block)
-						if (event.key == K_s):
-							self.player1.dir = 'd'
-							self.player1.tick()
-							self.screen.blit(self.player1.image, self.player1.rect)
-							block = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
-							self.blocks.append(block)
+#						if (event.key == K_a):
+#							self.player1.dir = 'l'
+#							self.player1.tick()
+#							self.screen.blit(self.player1.image, self.player1.rect)
+#							block = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
+#							self.blocks.append(block)
+#						if (event.key == K_d):
+#							self.player1.dir = 'r'
+#							self.player1.tick()
+#							self.screen.blit(self.player1.image, self.player1.rect)
+#							block = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
+#							self.blocks.append(block)
+#						if (event.key == K_w):
+#							self.player1.dir = 'u'
+#							self.player1.tick()
+#							self.screen.blit(self.player1.image, self.player1.rect)
+#							block = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
+#							self.blocks.append(block)
+#						if (event.key == K_s):
+#							self.player1.dir = 'd'
+#							self.player1.tick()
+#							self.screen.blit(self.player1.image, self.player1.rect)
+#							block = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
+#							self.blocks.append(block)
 
 						if (event.key == K_LEFT):
-							self.player2.dir = 'l'
-							self.player2.tick()
-							self.screen.blit(self.player2.image, self.player2.rect)
-							block = Block(self.player2.rect.x, self.player2.rect.y, self.color2)
-							self.blocks.append(block)
+                                			if not data_written:
+								self.player_me().dir = 'l'
+								self.player_me().tick()
+								self.screen.blit(self.player_me().image, self.player_me().rect)
+								block = Block(self.player_me().rect.x, self.player_me().rect.y, self.color_me())
+								self.blocks.append(block)
+                                                        	self.data_conn.transport.write("l")
+                                                                data_written = 1
+                                                                reactor.iterate()
 						if (event.key == K_RIGHT):
-							self.player2.dir = 'r'
-							self.player2.tick()
-							self.screen.blit(self.player2.image, self.player2.rect)
-							block = Block(self.player2.rect.x, self.player2.rect.y, self.color2)
-							self.blocks.append(block)
+                                			if not data_written:
+								self.player_me().dir = 'r'
+								self.player_me().tick()
+								self.screen.blit(self.player_me().image, self.player_me().rect)
+								block = Block(self.player_me().rect.x, self.player_me().rect.y, self.color_me())
+								self.blocks.append(block)
+                                                        	self.data_conn.transport.write("r")
+                                                                data_written = 1
+                                                                reactor.iterate()
 						if (event.key == K_UP):
-							self.player2.dir = 'u'
-							self.player2.tick()
-							self.screen.blit(self.player2.image, self.player2.rect)
-							block = Block(self.player2.rect.x, self.player2.rect.y, self.color2)
-							self.blocks.append(block)
+                                			if not data_written:
+								self.player_me().dir = 'u'
+								self.player_me().tick()
+								self.screen.blit(self.player_me().image, self.player_me().rect)
+								block = Block(self.player_me().rect.x, self.player_me().rect.y, self.color_me())
+								self.blocks.append(block)
+                                                        	self.data_conn.transport.write("u")
+                                                                data_written = 1
+                                                                reactor.iterate()
 						if (event.key == K_DOWN):
-							self.player2.dir = 'd'
-							self.player2.tick()
-							self.screen.blit(self.player2.image, self.player2.rect)
-							block = Block(self.player2.rect.x, self.player2.rect.y, self.color2)
-							self.blocks.append(block)
+                                			if not data_written:
+								self.player_me().dir = 'd'
+								self.player_me().tick()
+								self.screen.blit(self.player_me().image, self.player_me().rect)
+								block = Block(self.player_me().rect.x, self.player_me().rect.y, self.color_me())
+								self.blocks.append(block)
+                                                        	self.data_conn.transport.write("d")
+                                                                data_written = 1
+                                                                reactor.iterate()
 
-				self.player1.tick()
-				self.player2.tick()
-				block1 = Block(self.player1.rect.x, self.player1.rect.y, self.color1)
-				block2 = Block(self.player2.rect.x, self.player2.rect.y, self.color2)
+                                if not data_written:
+                                        self.data_conn.transport.write("o")
+                                        reactor.iterate()
+				self.player_me().tick()
+				self.player_other().tick()
+				block1 = Block(self.player_me().rect.x, self.player_me().rect.y, self.color_me())
+				block2 = Block(self.player_other().rect.x, self.player_other().rect.y, self.color_other())
 
 				self.screen.fill(self.black)
+                                self.check_collisions()
 
-				for e in self.edge:
-					self.screen.blit(e.image, e.rect)
-					if self.player1.rect.colliderect(e):
-						if (not self.collided):
-							self.collision(e, 1)
-							self.collided = True
-
-					elif self.player2.rect.colliderect(e):
-						if (not self.collided):
-							self.collision(e, 2)
-							self.collided = True
-
-				for b in self.blocks:
-					self.screen.blit(b.image, b.rect)
-					if self.player1.rect.colliderect(b):
-						if (not self.collided):
-							self.collision(b, 1)
-							self.collided = True
-
-					elif self.player2.rect.colliderect(b):
-						if (not self.collided):
-							self.collision(b, 2)
-							self.collided = True
-
-				self.blocks.append(block1)
+                                self.blocks.append(block1)
 				self.blocks.append(block2)
 
 				self.screen.blit(self.player1.image, self.player1.rect)
@@ -534,6 +596,29 @@ class GameSpace:
 
 				pygame.display.flip()
 
+
+        def check_collisions(self):
+                for e in self.edge:
+			self.screen.blit(e.image, e.rect)
+                	if self.player1.rect.colliderect(e):
+        			if (not self.collided):
+					self.collision(e, 1)
+                			self.collided = True
+			elif self.player2.rect.colliderect(e):
+                		if (not self.collided):
+        				self.collision(e, 2)
+					self.collided = True
+
+        	for b in self.blocks:
+			self.screen.blit(b.image, b.rect)
+                	if self.player1.rect.colliderect(b):
+        			if (not self.collided):
+					self.collision(b, 1)
+                			self.collided = True
+			elif self.player2.rect.colliderect(b):
+                		if (not self.collided):
+        				self.collision(b, 2)
+					self.collided = True
         def game_exit(self):
                 reactor.stop()
                 sys.exit()
