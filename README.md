@@ -9,11 +9,11 @@ Our game is a two player Tron-style game. When the game begins, you are greeted 
 
 ### Controls
 
-Use the mouse to click on the buttons, and use the arrow keys to navigate your player.
+Use the mouse to click on the buttons, and use the arrow keys to navigate your player. *Secret Controls:* In order to move more quickly, tap the direction you are moving in!  This could help you gain an edge over an opponent!
 
 ### How to Run
 
-The server is running currently on ash
+The server is running currently on ash.  In order for the game to work, the server must be running and the game clients must be configured to the server.  If a computer other than ash.campus.nd.edu is used to run the server, then the tron.py file must be modified.  The URL variable must be changed to match the server name.  If you want to run both games locally, use "localhost"
 
 In one player's window, run
 
