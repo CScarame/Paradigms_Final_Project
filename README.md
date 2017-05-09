@@ -1,11 +1,29 @@
-# Paradigms_Final_Project
+Paradigms Final Project
+=======================
 
-Project: Tron-style multiplayer game
+##### By *Chris "Scary" Scaramella* (cscarame) and *Jamie Maher* (jmaher5)
 
-Jamie Step 1: Create (very basic) Tron game that can be played by two players locally
+### Game Description
 
-Scary Step 1: Create (very basic) server/client system that takes two people searching for matches and puts them together
+Our game is a two player Tron-style game. When the game begins, you are greeted with a welcome screen that tells you when you are connected to the server. Once connected, you are able to select 'begin'. Once the start button is pressed, each player is prompted to pick a color. There are four colors to choose from, red, yellow, blue, or green. When both players have picked a color, the game begins. There is a small pause before the game starts animating to show each player their starting position. Then the game takes off! Each player uses their keyboard to change the direction of their tron-stream. It is similar to Snake in the way that the players can't run back over their own stream or into the walls. What makes this game more competitive is that you also can't run over your opponet's stream. This means that each player has to strategically find a path that can somehow trap the other player. The first player to run over a stream or hit the wall loses, and the other player wins! After the game is over, the players are prompted to either restart or quit. If they choose to restart, they can repick their colors. If they quit, the game exits gracefully.
 
-Finish by Monday
+### Controls
 
-After that we can start working on putting the two together.
+Use the mouse to click on the buttons, and use the arrow keys to navigate your player.
+
+### How to Run
+
+The server is running currently on ash
+
+In one player's window, run
+
+`$ python tron.py`
+
+And in a second window, run
+
+`$ python tron.py`
+
+### System Requirements
+
+Your computer must have Python 2.6 at least and also have the pygame and twisted libraries installed.
+
