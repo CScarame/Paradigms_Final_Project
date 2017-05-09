@@ -175,7 +175,7 @@ class GameSpace:
                 self.data_conn = None
 		group = ConnectionGroup()
                 group.gs = self
-		reactor.connectTCP(URL, 40000, ClientConnectionFactory("command", group), 5)
+		reactor.connectTCP(URL, 40052, ClientConnectionFactory("command", group), 5)
                 print "Started listening for a connection\n"
                 reactor.run()
                         
