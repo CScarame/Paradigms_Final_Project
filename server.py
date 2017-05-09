@@ -87,8 +87,8 @@ class ServerConnectionFactory(ClientFactory):
 
 if __name__== "__main__":
     group = ConnectionGroup()
-    group.port = 40001
-    reactor.listenTCP(40000, ServerConnectionFactory("command",group))
+    group.port = 41052
+    reactor.listenTCP(40052, ServerConnectionFactory("command",group))
     print "Started listening for connection"
 
 reactor.run()
