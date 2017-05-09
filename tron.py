@@ -1,9 +1,111 @@
 #!/usr/bin/env python
 
+
+
+
 import pygame
 from pygame.locals import *
 import sys
 import math
+
+### START client code
+
+from twisted.internet.protocol import ClientFactory
+from twisted.internet.protocol import Protocol
+from twisted.internet import reactor
+from twisted.internet.defer import DeferredQueue
+
+
+URL = "10.25.247.41"
+
+class ConnectionGroup():
+    def __init__(self):
+        self.command = None
+    	self.data = None
+        self.gs = None
+
+class TestConnection(Protocol):
+    def __init__(self):
+        self.address = "Unknown"
+        self.player = 0
+        return
+    def connectionMade(self):
+        print "New Connection Made\n"
+        return
+    def dataReceived(self,data):
+        print data
+        if data == "quit":
+            reactor.stop()
+            quit()
+        return
+    def connectionLost(self, reason):
+        print "Connection Lost\n"
+        return
+    def addAddress(self, address):
+        self.address = address
+        return
+
+class CommandConnection(Protocol):
+    def __init__(self,group):
+        self.player = 0
+        self.group = group
+    def connectionMade(self):
+        print "Command Connection Established"
+        self.group.command = self
+    def dataReceived(self,data):
+        print "Command: " + data
+        info = data.split(" ")
+        if info[0] == "listen":
+            self.player = 1
+            reactor.listenTCP(int(info[1]), ClientConnectionFactory("data", self.group))
+        elif info[0] == "connect":
+            self.player = 2
+            reactor.connectTCP(info[2], int(info[1]), ClientConnectionFactory("data", self.group))
+        self.transport.write("Player " + str(self.player) + " reporting in!")
+    def connectionLost(self, reason):
+        print "Command Connection Lost"
+
+
+
+class DataConnection(Protocol):
+    def __init__(self,group):
+        self.group = group
+        self.data = None
+    def connectionMade(self):
+        self.group.data = self
+        self.group.command.group = self.group
+        self.player = self.group.command.player
+        print "Data Connection Established"
+        print "I am player " + str(self.player)
+        self.group.gs.player = self.player
+        self.group.gs.data_conn = self
+        self.group.gs.main()
+    def dataReceived(self,data):
+        self.data = data
+        print data
+    def connectionLost(self, reason):
+        print "Connection Lost"
+    def getData(self):
+        return self.data
+        
+        
+class ClientConnectionFactory(ClientFactory):
+    def __init__(self, connection_type, group):
+        self.connection_type = connection_type
+        self.test_conn = TestConnection()
+        self.command = CommandConnection(group)
+        self.data = DataConnection(group)
+        return
+    def buildProtocol(self,addr):
+        if self.connection_type == "command":
+            return self.command
+        elif self.connection_type == "data":
+            return self.data
+        else:
+            return self.test_conn
+
+
+### END client code
 
 class Block:
 	def __init__(self, x, y, c):
@@ -43,7 +145,8 @@ class Player:
 
 	def tick(self):
 		if self.dir == 'l':
-			self.rect.x -= 8
+
+                        self.rect.x -= 8
 		elif self.dir == 'r':
 			self.rect.x +=8
 		elif self.dir == 'u':
@@ -53,85 +156,181 @@ class Player:
 
 
 class GameSpace:
-	def menu(self):
-		self.menuimage = pygame.image.load("menu.png")
+	def premain(self):
+                pygame.init()
+		self.size = self.width, self.height = 800, 800
+		self.screen = pygame.display.set_mode(self.size)
+		self.color1 = 'r'
+		self.color2 = 'b'
+                # Display menu screen
+		self.menuimage = pygame.image.load("menu_connecting.png")
 		self.screen.blit(self.menuimage, self.menuimage.get_rect())
 		pygame.display.flip()
+		# Wait to display begin button until finished connecting
+                self.data_conn = None
+		group = ConnectionGroup()
+                group.gs = self
+		reactor.connectTCP(URL, 40000, ClientConnectionFactory("command", group), 5)
+                print "Started listening for a connection\n"
+                reactor.run()
+                        
 
+                # Finish connecting, and continue with game, now self.player = 1 or 2 and self.data_conn is the connection to the game
+
+	def menu(self):
+                self.menuimage2 = pygame.image.load("menu.png")
+                self.screen.blit(self.menuimage2, self.menuimage2.get_rect())
+                self.button_press_image = pygame.image.load("button_pressed.png")
+                self.button_press_image.set_colorkey(self.button_press_image.get_at((0,0)))
+                pygame.display.flip()
+		# Start click detection
+                click = 0
 		while 1:
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT: sys.exit()
-				if event.type == pygame.MOUSEBUTTONUP:
+				if event.type == pygame.MOUSEBUTTONDOWN:
 					pos = pygame.mouse.get_pos()
 					if (pos[0] > 270 and pos[0] < 270+260 and pos[1] > 560 and pos[1] < 560+80):
+						click = 1
+                                                self.screen.blit(self.button_press_image, self.button_press_image.get_rect())
+                                                pygame.display.flip()
+                                elif event.type == pygame.MOUSEBUTTONUP and click == 1:
+                                        pos = pygame.mouse.get_pos()
+					if (pos[0] > 270 and pos[0] < 270+260 and pos[1] > 560 and pos[1] < 560+80):
 						return
+                                        else:
+                                                click = 0
+                                                self.screen.blit(self.menuimage2, self.menuimage2.get_rect())
+                                                pygame.display.flip()
+                                                        
+
 
 	def playerSelect(self):
+                # Display next screen
 		self.colorimage = pygame.image.load("colorselect.png")
 		self.screen.blit(self.colorimage, self.colorimage.get_rect())
 		pygame.display.flip()
-		playerpicking = 1
+                self.p1picking = pygame.image.load("p1small.png")
+                # Player 1 picking.  If Player 1, pick as normal.  If player 2, wait for player 1 to pick	
 		while 1:
-			for event in pygame.event.get():
-				if event.type == pygame.QUIT: sys.exit()
-				if event.type == pygame.MOUSEBUTTONUP:
-					pos = pygame.mouse.get_pos()
-					if (playerpicking == 1):
-						if (pos[0] > 447 and pos[0] < 447+180 and pos[1] > 457 and pos[1] < 457+180):
+	                if self.player == 1:
+                                # if cont_var = 1, continue
+                                cont_var = 0
+				for event in pygame.event.get():
+                                        if event.type == pygame.QUIT: self.game_exit()
+                                        if event.type == pygame.MOUSEBUTTONUP:
+                                                pos = pygame.mouse.get_pos()
+                                                if (pos[0] > 447 and pos[0] < 447+180 and pos[1] > 457 and pos[1] < 457+180):
 							self.color1 = 'y'
-							self.p1picking = pygame.image.load("p1small.png")
 							self.screen.blit(self.p1picking, [447, 457])
-							pygame.display.flip()
-							playerpicking = 2
+                                                        cont_var = 1
 						if (pos[0] > 200 and pos[0] < 200+180 and pos[1] > 180 and pos[1] < 180+180):
 							self.color1 = 'r'
-							self.p1picking = pygame.image.load("p1small.png")
 							self.screen.blit(self.p1picking, [200, 180])
-							pygame.display.flip()
-							playerpicking = 2
+                                                        cont_var = 1
 						if (pos[0] > 450 and pos[0] < 450+180 and pos[1] > 180 and pos[1] < 180+180):
 							self.color1 = 'g'
-							self.p1picking = pygame.image.load("p1small.png")
 							self.screen.blit(self.p1picking, [450, 180])
-							pygame.display.flip()
-							playerpicking = 2
+                                                        cont_var = 1
 						if (pos[0] > 200 and pos[0] < 200+180 and pos[1] > 457 and pos[1] < 457+180):
 							self.color1 = 'b'
-							self.p1picking = pygame.image.load("p1small.png")
 							self.screen.blit(self.p1picking, [200, 457])
-							pygame.display.flip()
-							playerpicking = 2
-					elif (playerpicking == 2):
+                                                        cont_var = 1
+                                        	pygame.display.flip()
+                                if cont_var:
+                                        self.data_conn.transport.write(self.color1)
+                                        break
+        	        elif self.player == 2:
+                                while 1:
+                        		for event in pygame.event.get():
+						if event.type == pygame.QUIT: self.game_exit()
+                                        reactor.iterate()
+                                        if self.data_conn.data == 'r':
+                                		self.color1 = 'r'
+						self.screen.blit(self.p1picking, [200, 180])
+                                                cont_var = 1
+                                        elif self.data_conn.data == 'y':
+                                		self.color1 = 'y'
+						self.screen.blit(self.p1picking, [447, 457])
+                                                cont_var = 1
+                                        elif self.data_conn.data == 'g':
+                                		self.color1 = 'g'
+						self.screen.blit(self.p1picking, [450, 180])
+                                                cont_var = 1
+                                        elif self.data_conn.data == 'b':
+                                                self.color1 = 'b'
+                                                self.screen.blit(self.p1picking, [200,457])
+                                                cont_var = 1
+                                        else: continue
+
+                                        if cont_var == 1:
+                                                pygame.display.flip()
+                                                break
+                                if cont_var == 1: break
+
+                # Player 2 picking.  If player 1, wait for player 2 to pick, If player 2, pick as normal
+        	self.p2picking = pygame.image.load("p2small.png")
+		while 1:
+                        if self.player == 2:
+				for event in pygame.event.get():
+					if event.type == pygame.QUIT: self.game_exit()
+					if event.type == pygame.MOUSEBUTTONUP:
+						pos = pygame.mouse.get_pos()
 						if (pos[0] > 447 and pos[0] < 447+180 and pos[1] > 457 and pos[1] < 457+180):
 							self.color2 = 'y'
-							self.p2picking = pygame.image.load("p2small.png")
+                                                        self.data_conn.transport.write('y')
+                                                        reactor.iterate()
 							self.screen.blit(self.p2picking, [447, 457])
 							pygame.display.flip()
-							pygame.time.delay(1000)
 							return
 						if (pos[0] > 200 and pos[0] < 200+180 and pos[1] > 180 and pos[1] < 180+180):
 							self.color2 = 'r'
-							self.p2picking = pygame.image.load("p2small.png")
+                                                        self.data_conn.transport.write(self.color2)
+                                                        reactor.iterate()
 							self.screen.blit(self.p2picking, [200, 180])
 							pygame.display.flip()
-							pygame.time.delay(1000)
 							return
 						if (pos[0] > 450 and pos[0] < 450+180 and pos[1] > 180 and pos[1] < 180+180):
 							self.color2 = 'g'
-							self.p2picking = pygame.image.load("p2small.png")
+                                                        self.data_conn.transport.write(self.color2)
+                                                        reactor.iterate()
 							self.screen.blit(self.p2picking, [450, 180])
 							pygame.display.flip()
-							pyame.time.delay(1000)
 							return
 						if (pos[0] > 200 and pos[0] < 200+180 and pos[1] > 457 and pos[1] < 457+180):
 							self.color2 = 'b'
-							self.p2picking = pygame.image.load("p2small.png")
+                                                        self.data_conn.transport.write(self.color2)
+                                                        reactor.iterate()
 							self.screen.blit(self.p2picking, [200, 457])
 							pygame.display.flip()
-							pygame.time.delay(1000)
 							return
-					else:
-						continue
+                        elif self.player == 1:
+                                while 1:
+					for event in pygame.event.get():
+						if event.type == pygame.QUIT: self.game_exit()
+                                        reactor.iterate()
+                                        if self.data_conn.data == 'r':
+                                		self.color2 = 'r'
+						self.screen.blit(self.p2picking, [200, 180])
+                                                pygame.display.flip()
+                                                return
+                                        elif self.data_conn.data == 'y':
+                                		self.color2 = 'y'
+						self.screen.blit(self.p2picking, [447, 457])
+                                                pygame.display.flip()
+                                                return
+                                        elif self.data_conn.data == 'g':
+                                		self.color2 = 'g'
+						self.screen.blit(self.p2picking, [450, 180])
+                                                pygame.display.flip()
+                                                return
+                                        elif self.data_conn.data == 'b':
+                                                self.color2 = 'b'
+                                                self.screen.blit(self.p2picking, [200,457])
+                                                pygame.display.flip()
+                                                return
+                                        else: continue
+
 
 	def collision(self, r, p):
 		counter = 0
@@ -182,10 +381,10 @@ class GameSpace:
 		restart = False
 		while not restart:
 			for event in pygame.event.get():
-				if event.type == pygame.QUIT: sys.exit()
+				if event.type == pygame.QUIT: self.game_exit()
 				if event.type == KEYDOWN:
 					if (event.key == K_q):
-						sys.exit()
+						self.game_exit()
 					if (event.key == K_r):
 						return
 					else:
@@ -211,11 +410,6 @@ class GameSpace:
 
 
 	def main(self):
-		pygame.init()
-		self.size = self.width, self.height = 800, 800
-		self.screen = pygame.display.set_mode(self.size)
-		self.color1 = 'r'
-		self.color2 = 'b'
 		self.menu()
 		self.black = 0, 0, 0
 		pygame.key.set_repeat(300, 50)
@@ -249,7 +443,7 @@ class GameSpace:
 			while not self.collided:
 				self.clock.tick(60)
 				for event in pygame.event.get():
-					if event.type == pygame.QUIT: sys.exit()
+					if event.type == pygame.QUIT: self.game_exit()
 					if event.type == KEYDOWN:
 						if (event.key == K_a):
 							self.player1.dir = 'l'
@@ -340,8 +534,12 @@ class GameSpace:
 
 				pygame.display.flip()
 
+        def game_exit(self):
+                reactor.stop()
+                sys.exit()
+
 
 
 if __name__ == '__main__':
 	gs = GameSpace()
-	gs.main()
+        gs.premain()

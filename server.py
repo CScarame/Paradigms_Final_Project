@@ -11,7 +11,7 @@ from twisted.internet.protocol import Protocol
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredQueue
 
-URL = "ash.campus.nd.edu"
+URL = "10.25.247.41"
 
 class ConnectionGroup():
     def __init__(self):
